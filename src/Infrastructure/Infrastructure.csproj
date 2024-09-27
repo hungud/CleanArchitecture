@@ -1,18 +1,39 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>CleanArchitecture.Infrastructure</RootNamespace>
     <AssemblyName>CleanArchitecture.Infrastructure</AssemblyName>
   </PropertyGroup>
 
+  <!--#if ('True' == 'False')-->
+  <!-- The above expression ensures this block will be excluded when the project is created using `dotnet new ca-sln` -->
   <ItemGroup>
-    <PackageReference Include="CsvHelper" Version="15.0.10" />
-    <PackageReference Include="Microsoft.AspNetCore.ApiAuthorization.IdentityServer" Version="5.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="5.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="5.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="5.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="5.0.0" />
+    <Compile Remove="Data\SQLite\**" />
+    <EmbeddedResource Remove="Data\SQLite\**" />
+    <None Remove="Data\SQLite\**" />
+  </ItemGroup>
+  <!--#endif-->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+    <!--#if (!UseApiOnly)-->
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" />
+    <!--#endif-->
+    <!--#if (UseSQLite)-->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <!--#endif-->
+    <!--#if (UseLocalDB)-->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <!--#endif-->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>

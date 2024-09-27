@@ -1,22 +1,27 @@
-﻿using CleanArchitecture.Application.Common.Mappings;
-using CleanArchitecture.Domain.Entities;
-using System.Collections.Generic;
+﻿using CleanArchitecture.Domain.Entities;
 
-namespace CleanArchitecture.Application.TodoLists.Queries.GetTodos
+namespace CleanArchitecture.Application.TodoLists.Queries.GetTodos;
+
+public class TodoListDto
 {
-    public class TodoListDto : IMapFrom<TodoList>
+    public TodoListDto()
     {
-        public TodoListDto()
+        Items = Array.Empty<TodoItemDto>();
+    }
+
+    public int Id { get; init; }
+
+    public string? Title { get; init; }
+
+    public string? Colour { get; init; }
+
+    public IReadOnlyCollection<TodoItemDto> Items { get; init; }
+
+    private class Mapping : Profile
+    {
+        public Mapping()
         {
-            Items = new List<TodoItemDto>();
+            CreateMap<TodoList, TodoListDto>();
         }
-
-        public int Id { get; set; }
-
-        public string Title { get; set; }
-
-        public string Colour { get; set; }
-
-        public IList<TodoItemDto> Items { get; set; }
     }
 }

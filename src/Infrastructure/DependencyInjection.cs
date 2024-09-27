@@ -1,58 +1,65 @@
 ﻿using CleanArchitecture.Application.Common.Interfaces;
-using CleanArchitecture.Infrastructure.Files;
+using CleanArchitecture.Domain.Constants;
+using CleanArchitecture.Infrastructure.Data;
+using CleanArchitecture.Infrastructure.Data.Interceptors;
 using CleanArchitecture.Infrastructure.Identity;
-using CleanArchitecture.Infrastructure.Persistence;
-using CleanArchitecture.Infrastructure.Services;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
-namespace CleanArchitecture.Infrastructure
+namespace Microsoft.Extensions.DependencyInjection;
+
+public static class DependencyInjection
 {
-    public static class DependencyInjection
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
-        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+        Guard.Against.Null(connectionString, message: "Connection string 'DefaultConnection' not found.");
+
+        services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
+        services.AddScoped<ISaveChangesInterceptor, DispatchDomainEventsInterceptor>();
+
+        services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
-            if (configuration.GetValue<bool>("UseInMemoryDatabase"))
-            {
-                services.AddDbContext<ApplicationDbContext>(options =>
-                    options.UseInMemoryDatabase("CleanArchitectureDb"));
-            }
-            else
-            {
-                services.AddDbContext<ApplicationDbContext>(options =>
-                    options.UseSqlServer(
-                        configuration.GetConnectionString("DefaultConnection"),
-                        b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
-            }
+            options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
 
-            services.AddScoped<IApplicationDbContext>(provider => provider.GetService<ApplicationDbContext>());
+#if (UseSQLite)
+            options.UseSqlite(connectionString);
+#else
+            options.UseSqlServer(connectionString);
+#endif
+        });
 
-            services.AddScoped<IDomainEventService, DomainEventService>();
+        services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
-            services
-                .AddDefaultIdentity<ApplicationUser>()
-                .AddRoles<IdentityRole>()
-                .AddEntityFrameworkStores<ApplicationDbContext>();
+        services.AddScoped<ApplicationDbContextInitialiser>();
 
-            services.AddIdentityServer()
-                .AddApiAuthorization<ApplicationUser, ApplicationDbContext>();
+#if (UseApiOnly)
+        services.AddAuthentication()
+            .AddBearerToken(IdentityConstants.BearerScheme);
 
-            services.AddTransient<IDateTime, DateTimeService>();
-            services.AddTransient<IIdentityService, IdentityService>();
-            services.AddTransient<ICsvFileBuilder, CsvFileBuilder>();
+        services.AddAuthorizationBuilder();
 
-            services.AddAuthentication()
-                .AddIdentityServerJwt();
+        services
+            .AddIdentityCore<ApplicationUser>()
+            .AddRoles<IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddApiEndpoints();
+#else
+        services
+            .AddDefaultIdentity<ApplicationUser>()
+            .AddRoles<IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>();
+#endif
 
-            services.AddAuthorization(options =>
-            {
-                options.AddPolicy("CanPurge", policy => policy.RequireRole("Administrator"));
-            });
+        services.AddSingleton(TimeProvider.System);
+        services.AddTransient<IIdentityService, IdentityService>();
 
-            return services;
-        }
+        services.AddAuthorization(options =>
+            options.AddPolicy(Policies.CanPurge, policy => policy.RequireRole(Roles.Administrator)));
+
+        return services;
     }
 }

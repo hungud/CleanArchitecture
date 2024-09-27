@@ -1,11 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using CleanArchitecture.Application.Common.Models;
 
-namespace CleanArchitecture.Application.TodoLists.Queries.GetTodos
+namespace CleanArchitecture.Application.TodoLists.Queries.GetTodos;
+
+public class TodosVm
 {
-    public class TodosVm
-    {
-        public IList<PriorityLevelDto> PriorityLevels { get; set; }
+    public IReadOnlyCollection<LookupDto> PriorityLevels { get; init; } = Array.Empty<LookupDto>();
 
-        public IList<TodoListDto> Lists { get; set; }
-    }
+    public IReadOnlyCollection<TodoListDto> Lists { get; init; } = Array.Empty<TodoListDto>();
 }
